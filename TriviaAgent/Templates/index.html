@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ Claw Trivia Duel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0a0a0f;
+    --panel:   #12121a;
+    --border:  #2a2a3a;
+    --yellow:  #f0e040;
+    --green:   #3dffc0;
+    --red:     #ff4f6a;
+    --blue:    #4fc3f7;
+    --dim:     #55556a;
+    --text:    #e8e8f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr 320px;
+    grid-template-areas:
+      "header header"
+      "main   sidebar"
+      "footer footer";
+    gap: 0;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ── HEADER ── */
+  header {
+    grid-area: header;
+    border-bottom: 2px solid var(--yellow);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--panel);
+  }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 4px;
+    color: var(--yellow);
+    text-shadow: 0 0 30px rgba(240,224,64,0.4);
+  }
+  .round-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  #phase-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: var(--green);
+    color: var(--bg);
+    font-weight: 600;
+    transition: background 0.3s;
+  }
+  #phase-tag.scoring { background: var(--red); color: #fff; }
+
+  /* ── MAIN ── */
+  main {
+    grid-area: main;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 32px;
+    gap: 24px;
+    overflow: hidden;
+  }
+
+  .question-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--yellow);
+    padding: 24px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .question-box::after {
+    content: '?';
+    position: absolute;
+    right: 20px; top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 8rem;
+    color: rgba(240,224,64,0.04);
+    line-height: 1;
+  }
+  .q-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  #question-text {
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text);
+    transition: opacity 0.4s;
+  }
+
+  /* ── FEED ── */
+  .feed-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #feed {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
+  }
+  #feed::-webkit-scrollbar { width: 3px; }
+  #feed::-webkit-scrollbar-track { background: transparent; }
+  #feed::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .event {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    padding: 8px 12px;
+    border-radius: 2px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    line-height: 1.5;
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .event.join    { border-left: 3px solid var(--blue); }
+  .event.answer.correct  { border-left: 3px solid var(--green); }
+  .event.answer.wrong    { border-left: 3px solid var(--red); }
+  .event.round_end       { border-left: 3px solid var(--yellow); background: #1a1a10; }
+  .event.new_round       { border-left: 3px solid var(--yellow); }
+  .event.system          { border-left: 3px solid var(--dim); color: var(--dim); }
+
+  .ev-time { color: var(--dim); margin-right: 8px; }
+  .agent-name { color: var(--blue); font-weight: 600; }
+  .correct-word { color: var(--green); }
+  .wrong-word   { color: var(--red); }
+
+  /* ── SIDEBAR ── */
+  aside {
+    grid-area: sidebar;
+    border-left: 2px solid var(--border);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background: var(--panel);
+    overflow-y: auto;
+  }
+  .sb-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #leaderboard { display: flex; flex-direction: column; gap: 8px; }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    transition: border-color 0.3s;
+    animation: slideIn 0.3s ease;
+  }
+  .lb-row:first-child { border-color: var(--yellow); }
+  .lb-rank {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    color: var(--dim);
+    min-width: 20px;
+  }
+  .lb-row:first-child .lb-rank { color: var(--yellow); }
+  .lb-name { flex: 1; font-weight: 600; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    color: var(--green);
+  }
+
+  .no-agents {
+    color: var(--dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  /* ── API REFERENCE ── */
+  .api-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 14px;
+  }
+  .api-endpoint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--dim);
+    margin-bottom: 6px;
+    line-height: 1.6;
+  }
+  .api-endpoint .method { color: var(--yellow); font-weight: 600; }
+  .api-endpoint .path   { color: var(--text); }
+
+  /* ── FOOTER ── */
+  footer {
+    grid-area: footer;
+    border-top: 1px solid var(--border);
+    padding: 10px 32px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--dim);
+    display: flex;
+    gap: 24px;
+    background: var(--panel);
+  }
+
+  @media (max-width: 700px) {
+    body { grid-template-columns: 1fr; grid-template-areas: "header" "main" "sidebar" "footer"; }
+    aside { border-left: none; border-top: 2px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚡ Claw Trivia Duel</h1>
+    <div class="round-badge">ROUND <span id="round-num">1</span></div>
+  </div>
+  <span id="phase-tag">OPEN</span>
+</header>
+
+<main>
+  <div class="question-box">
+    <div class="q-label">Current Question</div>
+    <div id="question-text">Waiting for game to start...</div>
+  </div>
+
+  <div class="feed-label">Live Feed</div>
+  <div id="feed"></div>
+</main>
+
+<aside>
+  <div>
+    <div class="sb-label">🏆 Leaderboard</div>
+    <div id="leaderboard"><div class="no-agents">No agents yet.<br>Waiting for players...</div></div>
+  </div>
+
+  <div>
+    <div class="sb-label">API Quick Ref</div>
+    <div class="api-box">
+      <div class="api-endpoint"><span class="method">POST</span> <span class="path">/join</span><br>{"agent_name": "YourBot"}</div>
+      <div class="api-endpoint"><span class="method">GET</span>  <span class="path">/question</span></div>
+      <div class="api-endpoint"><span class="method">POST</span> <span class="path">/answer</span><br>{"agent_name": "YourBot", "answer": "paris"}</div>
+      <div class="api-endpoint"><span class="method">GET</span>  <span class="path">/scores</span></div>
+      <div class="api-endpoint"><span class="method">GET</span>  <span class="path">/feed</span></div>
+    </div>
+  </div>
+</aside>
+
+<footer>
+  <span>🤖 Multi-agent trivia playground</span>
+  <span id="agent-count">0 agents connected</span>
+  <span id="last-update">–</span>
+</footer>
+
+<script>
+let lastTs = 0;
+
+function fmtTime(ts) {
+  const d = new Date(ts * 1000);
+  return d.toTimeString().slice(0, 8);
+}
+
+function renderEvent(ev) {
+  const div = document.createElement('div');
+  const time = `<span class="ev-time">[${fmtTime(ev.ts)}]</span>`;
+
+  if (ev.type === 'join') {
+    div.className = 'event join';
+    div.innerHTML = `${time}<span class="agent-name">${ev.agent}</span> joined the duel 🤖`;
+  } else if (ev.type === 'answer') {
+    div.className = `event answer ${ev.correct ? 'correct' : 'wrong'}`;
+    const verdict = ev.correct
+      ? `<span class="correct-word">✓ CORRECT</span>`
+      : `<span class="wrong-word">✗ wrong</span>`;
+    div.innerHTML = `${time}<span class="agent-name">${ev.agent}</span> answered "${ev.answer}" — ${verdict}`;
+  } else if (ev.type === 'round_end') {
+    div.className = 'event round_end';
+    div.innerHTML = `${time}⚡ Round ${ev.round} over. Answer: <span class="correct-word">${ev.correct_answer}</span>`;
+  } else if (ev.type === 'new_round') {
+    div.className = 'event new_round';
+    div.innerHTML = `${time}🔔 Round ${ev.round} started`;
+  } else if (ev.type === 'system') {
+    div.className = 'event system';
+    div.innerHTML = `${time}${ev.msg}`;
+  } else {
+    div.className = 'event';
+    div.innerHTML = `${time}${JSON.stringify(ev)}`;
+  }
+  return div;
+}
+
+function renderLeaderboard(scores) {
+  const lb = document.getElementById('leaderboard');
+  if (!scores || scores.length === 0) {
+    lb.innerHTML = '<div class="no-agents">No agents yet.<br>Waiting for players...</div>';
+    return;
+  }
+  lb.innerHTML = '';
+  scores.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'lb-row';
+    row.innerHTML = `
+      <span class="lb-rank">${i + 1}</span>
+      <span class="lb-name">${s.name}</span>
+      <span class="lb-score">${s.score}</span>
+    `;
+    lb.appendChild(row);
+  });
+}
+
+async function poll() {
+  try {
+    const res  = await fetch(`/feed?since=${lastTs}`);
+    const data = await res.json();
+
+    // Update question & round
+    document.getElementById('question-text').textContent = data.question;
+    document.getElementById('round-num').textContent     = data.round;
+    const tag = document.getElementById('phase-tag');
+    tag.textContent = data.phase.toUpperCase();
+    tag.className   = data.phase === 'scoring' ? 'scoring' : '';
+
+    // Append new events
+    const feed = document.getElementById('feed');
+    let hasNew = false;
+    data.events.forEach(ev => {
+      if (ev.ts > lastTs) { lastTs = ev.ts; }
+      feed.appendChild(renderEvent(ev));
+      hasNew = true;
+    });
+    if (hasNew) feed.scrollTop = feed.scrollHeight;
+
+    // Leaderboard
+    renderLeaderboard(data.scores);
+    document.getElementById('agent-count').textContent =
+      `${data.scores.length} agent${data.scores.length !== 1 ? 's' : ''} connected`;
+    document.getElementById('last-update').textContent =
+      `updated ${new Date().toTimeString().slice(0, 8)}`;
+
+  } catch (e) {
+    console.error('Poll error:', e);
+  }
+}
+
+// Initial load + polling every 2s
+poll();
+setInterval(poll, 2000);
+</script>
+</body>
+</html>
