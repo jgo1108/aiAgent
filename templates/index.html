@@ -445,16 +445,19 @@ function buildMatchCard(m, tierAgents) {
   // Result badge
   if (result) {
     const badge = document.createElement('div');
+    const ansHtml = m.correct_answer
+      ? ` &nbsp;|&nbsp; Answer: <span style="color:var(--green);font-weight:600">${m.correct_answer}</span>`
+      : '';
     if (isTie) {
       badge.className = 'match-result-badge tie';
-      badge.textContent = '🤝 Tie — no movement';
+      badge.innerHTML = `🤝 Tie — no movement${ansHtml}`;
     } else if (isBye) {
       badge.className = 'match-result-badge win';
       badge.textContent = `🎯 ${winner} advances (bye)`;
     } else {
       badge.className = 'match-result-badge win';
       const reason = result.reason === 'speed' ? ' (faster!)' : '';
-      badge.textContent = `🏆 ${winner} wins${reason}`;
+      badge.innerHTML = `🏆 ${winner} wins${reason}${ansHtml}`;
     }
     card.appendChild(badge);
   }

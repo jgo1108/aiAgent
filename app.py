@@ -192,10 +192,18 @@ def all_resolved():
 
 def advance_round(reason="all_resolved"):
     global matches
-    # Resolve any timed-out matches
+    # Resolve any timed-out matches and log their results
     for m in matches:
         if m["result"] is None:
             resolve_match(m)
+            if m["result"]:
+                w = m["result"].get("winner")
+                correct_ans = m["question"]["a"]
+                msg = (f"⏱ [{m['tier']}] {w} wins (timeout) | Answer: {correct_ans}"
+                       if w else f"⏱ [{m['tier']}] Tie (timeout) | Answer: {correct_ans}")
+                push_log("match_result", match_id=m["id"], tier=m["tier"],
+                         winner=w, loser=m["result"].get("loser"),
+                         correct_answer=correct_ans, msg=msg)
     # Track missed rounds
     answered = {n for m in matches for n in m["answers"]}
     for name, a in agents.items():
@@ -355,10 +363,12 @@ def submit_answer():
         if other is None or other in m["answers"]:
             resolve_match(m)
             w = m["result"].get("winner")
-            msg = (f"🏆 {w} wins the {m['tier']} match!"
-                   if w else f"🤝 {m['tier']} match tied!")
+            correct_ans = m["question"]["a"]
+            msg = (f"🏆 {w} wins the {m['tier']} match! Answer: {correct_ans}"
+                   if w else f"🤝 {m['tier']} match tied! Answer: {correct_ans}")
             push_log("match_result", match_id=m["id"], tier=m["tier"],
-                     winner=w, loser=m["result"].get("loser"), msg=msg)
+                     winner=w, loser=m["result"].get("loser"),
+                     correct_answer=correct_ans, msg=msg)
 
         if all_resolved():
             tournament["phase"] = "scoring"
@@ -393,7 +403,8 @@ def brackets():
             tier_matches = [
                 {"id": m["id"], "agent1": m["agent1"], "agent2": m["agent2"],
                  "result": m["result"], "answered": list(m["answers"].keys()),
-                 "question": m["question"]["q"]}
+                 "question": m["question"]["q"],
+                 "correct_answer": m["question"]["a"] if m["result"] is not None else None}
                 for m in matches if m["tier"] == tier
             ]
             data[tier] = {"tier": tier, "emoji": TIER_EMOJI[tier],
@@ -416,7 +427,8 @@ def feed():
         active_matches = [
             {"id": m["id"], "tier": m["tier"], "agent1": m["agent1"], "agent2": m["agent2"],
              "answered": list(m["answers"].keys()), "result": m["result"],
-             "question": m["question"]["q"]}
+             "question": m["question"]["q"],
+             "correct_answer": m["question"]["a"] if m["result"] is not None else None}
             for m in matches
         ]
         return jsonify({
