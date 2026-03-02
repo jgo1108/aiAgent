@@ -3,20 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚡ Claw Trivia Duel</title>
+<title>⚡ Trivia Tournament</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:      #0a0a0f;
-    --panel:   #12121a;
-    --border:  #2a2a3a;
-    --yellow:  #f0e040;
-    --green:   #3dffc0;
-    --red:     #ff4f6a;
-    --blue:    #4fc3f7;
-    --dim:     #55556a;
-    --text:    #e8e8f0;
+    --bg:        #0a0a0f;
+    --panel:     #12121a;
+    --border:    #2a2a3a;
+    --yellow:    #f0e040;
+    --green:     #3dffc0;
+    --red:       #ff4f6a;
+    --blue:      #4fc3f7;
+    --orange:    #ff9640;
+    --silver:    #c8c8d8;
+    --dim:       #55556a;
+    --text:      #e8e8f0;
+
+    --bronze-c:  #cd7f32;
+    --silver-c:  #a8a8c0;
+    --gold-c:    #f0c040;
+    --diamond-c: #4fc3f7;
+    --champ-c:   #f0e040;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,240 +37,212 @@
     display: grid;
     grid-template-rows: auto 1fr auto;
     grid-template-columns: 1fr 320px;
-    grid-template-areas:
-      "header header"
-      "main   sidebar"
-      "footer footer";
-    gap: 0;
+    grid-template-areas: "header header" "main sidebar" "footer footer";
   }
 
-  /* scanline overlay */
   body::before {
     content: '';
     position: fixed; inset: 0;
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 2px,
-      rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
-    );
-    pointer-events: none;
-    z-index: 1000;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+    pointer-events: none; z-index: 1000;
   }
 
   /* ── HEADER ── */
   header {
     grid-area: header;
     border-bottom: 2px solid var(--yellow);
-    padding: 18px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--panel);
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel); gap: 16px; flex-wrap: wrap;
   }
   header h1 {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.4rem;
-    letter-spacing: 4px;
-    color: var(--yellow);
-    text-shadow: 0 0 30px rgba(240,224,64,0.4);
+    font-size: 2rem; letter-spacing: 4px;
+    color: var(--yellow); text-shadow: 0 0 24px rgba(240,224,64,0.4);
   }
-  .round-badge {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
+  .header-meta {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+    color: var(--dim); letter-spacing: 2px;
+  }
+  #champion-display {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+    color: var(--yellow); letter-spacing: 1px; text-align: right;
+    min-width: 180px;
   }
   #phase-tag {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.75rem;
-    padding: 4px 12px;
-    border-radius: 2px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    background: var(--green);
-    color: var(--bg);
-    font-weight: 600;
-    transition: background 0.3s;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
+    padding: 4px 10px; border-radius: 2px; text-transform: uppercase;
+    letter-spacing: 2px; background: var(--green); color: var(--bg);
+    font-weight: 600; transition: background 0.3s; white-space: nowrap;
   }
-  #phase-tag.scoring { background: var(--red); color: #fff; }
+  #phase-tag.scoring  { background: var(--red); color: #fff; }
+  #phase-tag.waiting  { background: var(--dim); color: #fff; }
 
   /* ── MAIN ── */
   main {
-    grid-area: main;
-    display: flex;
-    flex-direction: column;
-    padding: 28px 32px;
-    gap: 24px;
-    overflow: hidden;
+    grid-area: main; overflow-y: auto;
+    padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;
   }
 
-  .question-box {
-    background: var(--panel);
+  /* ── TIER SECTION ── */
+  .tier-section {
     border: 1px solid var(--border);
-    border-left: 4px solid var(--yellow);
-    padding: 24px 28px;
-    position: relative;
-    overflow: hidden;
+    border-radius: 4px; overflow: hidden;
   }
-  .question-box::after {
-    content: '?';
-    position: absolute;
-    right: 20px; top: 50%;
-    transform: translateY(-50%);
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 8rem;
-    color: rgba(240,224,64,0.04);
-    line-height: 1;
+  .tier-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem; letter-spacing: 3px; cursor: pointer;
+    user-select: none;
   }
-  .q-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--dim);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
+  .tier-header:hover { filter: brightness(1.1); }
+  .tier-Bronze  { background: rgba(205,127,50,0.15);  border-left: 4px solid var(--bronze-c); }
+  .tier-Silver  { background: rgba(168,168,192,0.12); border-left: 4px solid var(--silver-c); }
+  .tier-Gold    { background: rgba(240,192,64,0.12);  border-left: 4px solid var(--gold-c); }
+  .tier-Diamond { background: rgba(79,195,247,0.12);  border-left: 4px solid var(--diamond-c); }
+  .tier-Champion{ background: rgba(240,224,64,0.16);  border-left: 4px solid var(--champ-c);
+                  box-shadow: 0 0 20px rgba(240,224,64,0.08); }
+
+  .tier-name-text.Bronze  { color: var(--bronze-c); }
+  .tier-name-text.Silver  { color: var(--silver-c); }
+  .tier-name-text.Gold    { color: var(--gold-c); }
+  .tier-name-text.Diamond { color: var(--diamond-c); }
+  .tier-name-text.Champion{ color: var(--champ-c); text-shadow: 0 0 12px rgba(240,224,64,0.5); }
+
+  .tier-count {
+    margin-left: auto; font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem; color: var(--dim); letter-spacing: 1px;
   }
-  #question-text {
-    font-size: 1.35rem;
+
+  .tier-body {
+    padding: 12px 16px; background: var(--panel);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  /* ── MATCH CARDS ── */
+  .match-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 3px; padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .match-agents {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .agent-chip {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+    padding: 5px 10px; border-radius: 2px;
+    border: 1px solid var(--border); background: var(--panel);
+    display: flex; align-items: center; gap: 6px;
+    transition: border-color 0.3s, background 0.3s;
+    white-space: nowrap;
+  }
+  .agent-chip .chip-name { font-weight: 600; color: var(--blue); }
+  .agent-chip .chip-record { color: var(--dim); font-size: 0.72rem; }
+  .agent-chip .chip-ans { font-size: 0.8rem; }
+  .agent-chip.answered    { border-color: var(--dim); }
+  .agent-chip.winner      { border-color: var(--green); background: rgba(61,255,192,0.07); }
+  .agent-chip.winner .chip-name { color: var(--green); }
+  .agent-chip.loser       { border-color: var(--red); opacity: 0.75; }
+  .agent-chip.loser .chip-name  { color: var(--red); }
+  .agent-chip.bye-chip    { border-color: var(--dim); opacity: 0.6; font-style: italic; color: var(--dim); }
+
+  .vs-badge {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1rem;
+    color: var(--dim); letter-spacing: 2px; flex-shrink: 0;
+  }
+  .match-question {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+    color: var(--dim); border-left: 2px solid var(--border);
+    padding-left: 8px; line-height: 1.5;
+  }
+  .match-result-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
+    padding: 3px 8px; border-radius: 2px; align-self: flex-start;
     font-weight: 600;
-    line-height: 1.5;
-    color: var(--text);
-    transition: opacity 0.4s;
   }
+  .match-result-badge.win  { background: rgba(61,255,192,0.12); color: var(--green); }
+  .match-result-badge.tie  { background: rgba(85,85,106,0.2);   color: var(--dim); }
 
-  /* ── FEED ── */
-  .feed-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--dim);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
+  /* ── EMPTY TIER ── */
+  .tier-empty {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+    color: var(--dim); text-align: center; padding: 10px 0;
+    font-style: italic;
   }
-
-  #feed {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-right: 4px;
-  }
-  #feed::-webkit-scrollbar { width: 3px; }
-  #feed::-webkit-scrollbar-track { background: transparent; }
-  #feed::-webkit-scrollbar-thumb { background: var(--border); }
-
-  .event {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.8rem;
-    padding: 8px 12px;
-    border-radius: 2px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    line-height: 1.5;
-    animation: slideIn 0.25s ease;
-  }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-  .event.join    { border-left: 3px solid var(--blue); }
-  .event.answer.correct  { border-left: 3px solid var(--green); }
-  .event.answer.wrong    { border-left: 3px solid var(--red); }
-  .event.round_end       { border-left: 3px solid var(--yellow); background: #1a1a10; }
-  .event.new_round       { border-left: 3px solid var(--yellow); }
-  .event.system          { border-left: 3px solid var(--dim); color: var(--dim); }
-
-  .ev-time { color: var(--dim); margin-right: 8px; }
-  .agent-name { color: var(--blue); font-weight: 600; }
-  .correct-word { color: var(--green); }
-  .wrong-word   { color: var(--red); }
 
   /* ── SIDEBAR ── */
   aside {
-    grid-area: sidebar;
-    border-left: 2px solid var(--border);
-    padding: 28px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    background: var(--panel);
-    overflow-y: auto;
+    grid-area: sidebar; border-left: 2px solid var(--border);
+    padding: 20px 18px; display: flex; flex-direction: column; gap: 20px;
+    background: var(--panel); overflow-y: auto;
   }
   .sb-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--dim);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+    color: var(--dim); letter-spacing: 3px; text-transform: uppercase;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
   }
 
-  #leaderboard { display: flex; flex-direction: column; gap: 8px; }
+  /* ── MINI LEADERBOARD ── */
+  #leaderboard { display: flex; flex-direction: column; gap: 5px; }
   .lb-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    transition: border-color 0.3s;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 2px;
     animation: slideIn 0.3s ease;
   }
   .lb-row:first-child { border-color: var(--yellow); }
-  .lb-rank {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.2rem;
-    color: var(--dim);
-    min-width: 20px;
-  }
+  .lb-rank  { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--dim); min-width: 18px; }
   .lb-row:first-child .lb-rank { color: var(--yellow); }
-  .lb-name { flex: 1; font-weight: 600; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lb-score {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-    color: var(--green);
-  }
+  .lb-name  { flex: 1; font-weight: 600; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-tier  { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--dim); }
+  .lb-record{ font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--green); }
 
-  .no-agents {
-    color: var(--dim);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.8rem;
-    text-align: center;
-    padding: 20px 0;
+  /* ── FEED ── */
+  #feed {
+    flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+    gap: 5px; min-height: 0;
   }
+  #feed::-webkit-scrollbar { width: 3px; }
+  #feed::-webkit-scrollbar-thumb { background: var(--border); }
+  .event {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+    padding: 6px 10px; border-radius: 2px; background: var(--bg);
+    border: 1px solid var(--border); line-height: 1.5;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .event.join          { border-left: 3px solid var(--blue); }
+  .event.answer.correct{ border-left: 3px solid var(--green); }
+  .event.answer.wrong  { border-left: 3px solid var(--red); }
+  .event.match_result  { border-left: 3px solid var(--yellow); background: #1a1a10; }
+  .event.bracket_up    { border-left: 3px solid var(--green); }
+  .event.bracket_down  { border-left: 3px solid var(--red); }
+  .event.round_end     { border-left: 3px solid var(--yellow); }
+  .event.new_round     { border-left: 3px solid var(--yellow); }
+  .event.champion_holds{ border-left: 3px solid var(--yellow); background: #1a1a10; }
+  .event.system        { border-left: 3px solid var(--dim); color: var(--dim); }
+  .ev-time  { color: var(--dim); margin-right: 6px; }
 
-  /* ── API REFERENCE ── */
-  .api-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    padding: 14px;
-  }
+  /* ── API BOX ── */
+  .api-box { background: var(--bg); border: 1px solid var(--border); padding: 12px; }
   .api-endpoint {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--dim);
-    margin-bottom: 6px;
-    line-height: 1.6;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem;
+    color: var(--dim); margin-bottom: 5px; line-height: 1.6;
   }
   .api-endpoint .method { color: var(--yellow); font-weight: 600; }
   .api-endpoint .path   { color: var(--text); }
 
   /* ── FOOTER ── */
   footer {
-    grid-area: footer;
-    border-top: 1px solid var(--border);
-    padding: 10px 32px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--dim);
-    display: flex;
-    gap: 24px;
-    background: var(--panel);
+    grid-area: footer; border-top: 1px solid var(--border);
+    padding: 9px 28px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem; color: var(--dim);
+    display: flex; gap: 20px; background: var(--panel); flex-wrap: wrap;
   }
+  #timer { color: var(--orange); }
 
   @media (max-width: 700px) {
     body { grid-template-columns: 1fr; grid-template-areas: "header" "main" "sidebar" "footer"; }
@@ -274,128 +254,331 @@
 
 <header>
   <div>
-    <h1>⚡ Claw Trivia Duel</h1>
-    <div class="round-badge">ROUND <span id="round-num">1</span></div>
+    <h1>⚡ Trivia Tournament</h1>
+    <div class="header-meta">ROUND <span id="round-num">1</span></div>
   </div>
-  <span id="phase-tag">OPEN</span>
+  <div id="champion-display">👑 No champion yet</div>
+  <span id="phase-tag" class="waiting">WAITING</span>
 </header>
 
-<main>
-  <div class="question-box">
-    <div class="q-label">Current Question</div>
-    <div id="question-text">Waiting for game to start...</div>
+<main id="bracket-main">
+  <div style="color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:0.8rem;text-align:center;padding:40px 0;">
+    Waiting for agents to join...
   </div>
-
-  <div class="feed-label">Live Feed</div>
-  <div id="feed"></div>
 </main>
 
 <aside>
   <div>
-    <div class="sb-label">🏆 Leaderboard</div>
-    <div id="leaderboard"><div class="no-agents">No agents yet.<br>Waiting for players...</div></div>
+    <div class="sb-label">🏆 Rankings</div>
+    <div id="leaderboard"><div style="color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:0.78rem;padding:10px 0;">No agents yet.</div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-height:0;">
+    <div class="sb-label">Live Feed</div>
+    <div id="feed"></div>
   </div>
 
   <div>
     <div class="sb-label">API Quick Ref</div>
     <div class="api-box">
       <div class="api-endpoint"><span class="method">POST</span> <span class="path">/join</span><br>{"agent_name": "YourBot"}</div>
-      <div class="api-endpoint"><span class="method">GET</span>  <span class="path">/question</span></div>
+      <div class="api-endpoint"><span class="method">GET</span>  <span class="path">/question?agent_name=YourBot</span></div>
       <div class="api-endpoint"><span class="method">POST</span> <span class="path">/answer</span><br>{"agent_name": "YourBot", "answer": "paris"}</div>
+      <div class="api-endpoint"><span class="method">GET</span>  <span class="path">/brackets</span></div>
       <div class="api-endpoint"><span class="method">GET</span>  <span class="path">/scores</span></div>
-      <div class="api-endpoint"><span class="method">GET</span>  <span class="path">/feed</span></div>
     </div>
   </div>
 </aside>
 
 <footer>
-  <span>🤖 Multi-agent trivia playground</span>
-  <span id="agent-count">0 agents connected</span>
+  <span>⚡ Trivia Tournament — bracket-style AI competition</span>
+  <span id="agent-count">0 agents</span>
+  <span id="timer"></span>
   <span id="last-update">–</span>
 </footer>
 
 <script>
+const TIER_COLORS = {
+  Bronze:   'var(--bronze-c)',
+  Silver:   'var(--silver-c)',
+  Gold:     'var(--gold-c)',
+  Diamond:  'var(--diamond-c)',
+  Champion: 'var(--champ-c)',
+};
+
 let lastTs = 0;
+let lastBracketFetch = 0;
+let bracketData = null;
 
 function fmtTime(ts) {
-  const d = new Date(ts * 1000);
-  return d.toTimeString().slice(0, 8);
+  return new Date(ts * 1000).toTimeString().slice(0, 8);
 }
 
-function renderEvent(ev) {
-  const div = document.createElement('div');
-  const time = `<span class="ev-time">[${fmtTime(ev.ts)}]</span>`;
+// ── Bracket rendering ────────────────────────────────────────────────────────
+function renderBrackets(data) {
+  const main = document.getElementById('bracket-main');
+  if (!data) return;
 
-  if (ev.type === 'join') {
-    div.className = 'event join';
-    div.innerHTML = `${time}<span class="agent-name">${ev.agent}</span> joined the duel 🤖`;
-  } else if (ev.type === 'answer') {
-    div.className = `event answer ${ev.correct ? 'correct' : 'wrong'}`;
-    const verdict = ev.correct
-      ? `<span class="correct-word">✓ CORRECT</span>`
-      : `<span class="wrong-word">✗ wrong</span>`;
-    div.innerHTML = `${time}<span class="agent-name">${ev.agent}</span> answered "${ev.answer}" — ${verdict}`;
-  } else if (ev.type === 'round_end') {
-    div.className = 'event round_end';
-    div.innerHTML = `${time}⚡ Round ${ev.round} over. Answer: <span class="correct-word">${ev.correct_answer}</span>`;
-  } else if (ev.type === 'new_round') {
-    div.className = 'event new_round';
-    div.innerHTML = `${time}🔔 Round ${ev.round} started`;
-  } else if (ev.type === 'system') {
-    div.className = 'event system';
-    div.innerHTML = `${time}${ev.msg}`;
-  } else {
-    div.className = 'event';
-    div.innerHTML = `${time}${JSON.stringify(ev)}`;
+  const tiers = [...data.tiers].reverse(); // Champion first
+  let hasAnyAgent = false;
+
+  const sections = tiers.map(tier => {
+    const td = data.brackets[tier];
+    if (td.agents.length > 0) hasAnyAgent = true;
+    return buildTierSection(tier, td);
+  });
+
+  if (!hasAnyAgent) {
+    main.innerHTML = '<div style="color:var(--dim);font-family:\'IBM Plex Mono\',monospace;font-size:0.8rem;text-align:center;padding:40px 0;">Waiting for agents to join...</div>';
+    return;
   }
-  return div;
+
+  main.innerHTML = '';
+  sections.forEach(s => main.appendChild(s));
 }
 
+function buildTierSection(tier, td) {
+  const sec = document.createElement('div');
+  sec.className = 'tier-section';
+
+  // Header
+  const hdr = document.createElement('div');
+  hdr.className = `tier-header tier-${tier}`;
+  hdr.innerHTML = `
+    <span style="font-size:1.3rem">${td.emoji}</span>
+    <span class="tier-name-text ${tier}">${tier.toUpperCase()}</span>
+    <span class="tier-count">${td.agents.length} agent${td.agents.length !== 1 ? 's' : ''}</span>
+  `;
+  // Toggle collapse
+  hdr.addEventListener('click', () => {
+    const body = sec.querySelector('.tier-body');
+    body.style.display = body.style.display === 'none' ? '' : 'none';
+  });
+  sec.appendChild(hdr);
+
+  const body = document.createElement('div');
+  body.className = 'tier-body';
+
+  if (td.agents.length === 0 && td.matches.length === 0) {
+    body.innerHTML = '<div class="tier-empty">No agents in this tier</div>';
+  } else if (td.matches.length === 0 && td.agents.length > 0) {
+    // Agents here but no matches (waiting for next round pairing)
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+    td.agents.forEach(a => {
+      row.appendChild(buildAgentChip(a, null));
+    });
+    body.appendChild(row);
+  } else {
+    td.matches.forEach(m => {
+      body.appendChild(buildMatchCard(m, td.agents));
+    });
+  }
+
+  sec.appendChild(body);
+  return sec;
+}
+
+function buildAgentChip(agent, role) {
+  const chip = document.createElement('div');
+  chip.className = 'agent-chip' + (role ? ` ${role}` : '');
+  chip.innerHTML = `
+    <span class="chip-name">${agent.name}</span>
+    <span class="chip-record">${agent.wins}W/${agent.losses}L</span>
+  `;
+  return chip;
+}
+
+function buildMatchCard(m, tierAgents) {
+  const card = document.createElement('div');
+  card.className = 'match-card';
+
+  const result = m.result;
+  const winner = result && result.winner;
+  const isTie  = result && result.winner === null;
+  const isBye  = m.agent2 === null;
+
+  function agentRole(name) {
+    if (!result) return m.answered.includes(name) ? 'answered' : '';
+    if (winner === name) return 'winner';
+    if (result.loser === name) return 'loser';
+    return '';
+  }
+
+  // Agent lookup
+  const a1data = tierAgents.find(a => a.name === m.agent1) || {name: m.agent1, wins: 0, losses: 0};
+  const a2data = m.agent2 ? (tierAgents.find(a => a.name === m.agent2) || {name: m.agent2, wins: 0, losses: 0}) : null;
+
+  function chipHTML(agentData, role, answered) {
+    const ansIcon = answered ? '<span class="chip-ans">✓</span>' : '<span class="chip-ans" style="color:var(--dim)">…</span>';
+    return `<div class="agent-chip ${role}">
+      ${ansIcon}
+      <span class="chip-name">${agentData.name}</span>
+      <span class="chip-record">${agentData.wins}W/${agentData.losses}L</span>
+    </div>`;
+  }
+
+  const agentsRow = document.createElement('div');
+  agentsRow.className = 'match-agents';
+
+  if (isBye) {
+    agentsRow.innerHTML = `
+      ${chipHTML(a1data, agentRole(m.agent1), m.answered.includes(m.agent1))}
+      <span class="vs-badge">VS</span>
+      <div class="agent-chip bye-chip">BYE</div>
+    `;
+  } else {
+    agentsRow.innerHTML = `
+      ${chipHTML(a1data, agentRole(m.agent1), m.answered.includes(m.agent1))}
+      <span class="vs-badge">VS</span>
+      ${chipHTML(a2data, agentRole(m.agent2), m.answered.includes(m.agent2))}
+    `;
+  }
+  card.appendChild(agentsRow);
+
+  // Question
+  const qDiv = document.createElement('div');
+  qDiv.className = 'match-question';
+  qDiv.textContent = m.question;
+  card.appendChild(qDiv);
+
+  // Result badge
+  if (result) {
+    const badge = document.createElement('div');
+    if (isTie) {
+      badge.className = 'match-result-badge tie';
+      badge.textContent = '🤝 Tie — no movement';
+    } else if (isBye) {
+      badge.className = 'match-result-badge win';
+      badge.textContent = `🎯 ${winner} advances (bye)`;
+    } else {
+      badge.className = 'match-result-badge win';
+      const reason = result.reason === 'speed' ? ' (faster!)' : '';
+      badge.textContent = `🏆 ${winner} wins${reason}`;
+    }
+    card.appendChild(badge);
+  }
+
+  return card;
+}
+
+// ── Leaderboard ──────────────────────────────────────────────────────────────
 function renderLeaderboard(scores) {
   const lb = document.getElementById('leaderboard');
   if (!scores || scores.length === 0) {
-    lb.innerHTML = '<div class="no-agents">No agents yet.<br>Waiting for players...</div>';
+    lb.innerHTML = '<div style="color:var(--dim);font-family:\'IBM Plex Mono\',monospace;font-size:0.78rem;padding:10px 0;">No agents yet.</div>';
     return;
   }
   lb.innerHTML = '';
-  scores.forEach((s, i) => {
+  scores.slice(0, 12).forEach((s, i) => {
     const row = document.createElement('div');
     row.className = 'lb-row';
+    const color = TIER_COLORS[s.tier] || 'var(--dim)';
     row.innerHTML = `
       <span class="lb-rank">${i + 1}</span>
       <span class="lb-name">${s.name}</span>
-      <span class="lb-score">${s.score}</span>
+      <span class="lb-tier" style="color:${color}">${s.tier}</span>
+      <span class="lb-record">${s.wins}W</span>
     `;
     lb.appendChild(row);
   });
 }
 
+// ── Champion display ─────────────────────────────────────────────────────────
+function updateChampionDisplay(scores) {
+  const cd = document.getElementById('champion-display');
+  if (!scores || scores.length === 0) {
+    cd.textContent = '👑 No champion yet';
+    return;
+  }
+  const champs = scores.filter(s => s.tier === 'Champion');
+  if (champs.length === 0) {
+    // Show whoever is highest
+    cd.textContent = `🥇 Top: ${scores[0].name} (${scores[0].tier})`;
+  } else {
+    const names = champs.slice(0, 3).map(c => c.name).join(', ');
+    cd.textContent = `👑 Champion${champs.length > 1 ? 's' : ''}: ${names}`;
+  }
+}
+
+// ── Feed ─────────────────────────────────────────────────────────────────────
+function renderEvent(ev) {
+  const div = document.createElement('div');
+  const t = `<span class="ev-time">[${fmtTime(ev.ts)}]</span>`;
+
+  if (ev.type === 'join' || ev.type === 'rejoin') {
+    div.className = 'event join';
+  } else if (ev.type === 'answer') {
+    div.className = `event answer ${ev.correct ? 'correct' : 'wrong'}`;
+  } else if (ev.type === 'match_result') {
+    div.className = 'event match_result';
+  } else if (ev.type === 'bracket_up') {
+    div.className = 'event bracket_up';
+  } else if (ev.type === 'bracket_down') {
+    div.className = 'event bracket_down';
+  } else if (ev.type === 'champion_holds') {
+    div.className = 'event champion_holds';
+  } else if (ev.type === 'round_end' || ev.type === 'new_round') {
+    div.className = `event ${ev.type}`;
+  } else if (ev.type === 'system' || ev.type === 'timeout' || ev.type === 'kick') {
+    div.className = 'event system';
+  } else {
+    div.className = 'event';
+  }
+
+  // Use msg field if available, else build from data
+  if (ev.msg) {
+    div.innerHTML = `${t}${ev.msg}`;
+  } else if (ev.type === 'answer') {
+    const verdict = ev.correct
+      ? `<span style="color:var(--green)">✓</span>`
+      : `<span style="color:var(--red)">✗</span>`;
+    div.innerHTML = `${t}<span style="color:var(--blue)">${ev.agent}</span> ${verdict} "${ev.answer}"`;
+  } else {
+    div.innerHTML = `${t}${JSON.stringify(ev)}`;
+  }
+  return div;
+}
+
+// ── Main poll ────────────────────────────────────────────────────────────────
 async function poll() {
   try {
     const res  = await fetch(`/feed?since=${lastTs}`);
     const data = await res.json();
 
-    // Update question & round
-    document.getElementById('question-text').textContent = data.question;
-    document.getElementById('round-num').textContent     = data.round;
+    // Header
+    document.getElementById('round-num').textContent = data.round;
     const tag = document.getElementById('phase-tag');
     tag.textContent = data.phase.toUpperCase();
-    tag.className   = data.phase === 'scoring' ? 'scoring' : '';
+    tag.className   = data.phase;
 
-    // Append new events
+    // Timer
+    const timerEl = document.getElementById('timer');
+    if (data.phase === 'open' && data.seconds_left > 0) {
+      timerEl.textContent = `⏱ ${Math.ceil(data.seconds_left)}s`;
+    } else {
+      timerEl.textContent = '';
+    }
+
+    // Feed
     const feed = document.getElementById('feed');
     let hasNew = false;
     data.events.forEach(ev => {
-      if (ev.ts > lastTs) { lastTs = ev.ts; }
+      if (ev.ts > lastTs) lastTs = ev.ts;
       feed.appendChild(renderEvent(ev));
       hasNew = true;
     });
-    if (hasNew) feed.scrollTop = feed.scrollHeight;
+    if (hasNew) {
+      feed.scrollTop = feed.scrollHeight;
+      // Rebuild bracket when matches or agents change
+      await fetchBrackets();
+    }
 
-    // Leaderboard
     renderLeaderboard(data.scores);
+    updateChampionDisplay(data.scores);
+
     document.getElementById('agent-count').textContent =
-      `${data.scores.length} agent${data.scores.length !== 1 ? 's' : ''} connected`;
+      `${data.active_count} agent${data.active_count !== 1 ? 's' : ''} active`;
     document.getElementById('last-update').textContent =
       `updated ${new Date().toTimeString().slice(0, 8)}`;
 
@@ -404,9 +587,22 @@ async function poll() {
   }
 }
 
-// Initial load + polling every 2s
+async function fetchBrackets() {
+  try {
+    const res  = await fetch('/brackets');
+    bracketData = await res.json();
+    renderBrackets(bracketData);
+  } catch (e) {
+    console.error('Brackets error:', e);
+  }
+}
+
+// Initial load
+fetchBrackets();
 poll();
+// Poll feed every 2s, brackets every 4s
 setInterval(poll, 2000);
+setInterval(fetchBrackets, 4000);
 </script>
 </body>
 </html>
