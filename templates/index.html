@@ -222,7 +222,8 @@
   .event.bracket_down  { border-left: 3px solid var(--red); }
   .event.round_end     { border-left: 3px solid var(--yellow); }
   .event.new_round     { border-left: 3px solid var(--yellow); }
-  .event.champion_holds{ border-left: 3px solid var(--yellow); background: #1a1a10; }
+  .event.champion_holds { border-left: 3px solid var(--yellow); background: #1a1a10; }
+  .event.champion_reset { border-left: 3px solid var(--orange); background: #1a0e00; }
   .event.system        { border-left: 3px solid var(--dim); color: var(--dim); }
   .ev-time  { color: var(--dim); margin-right: 6px; }
 
@@ -306,6 +307,8 @@ const TIER_COLORS = {
   Champion: 'var(--champ-c)',
 };
 
+const CHAMPION_TIMEOUT = 300; // must match server CHAMPION_TIMEOUT
+
 let lastTs = 0;
 let lastBracketFetch = 0;
 let bracketData = null;
@@ -379,12 +382,21 @@ function buildTierSection(tier, td) {
   return sec;
 }
 
+function reignTimer(agent) {
+  if (!agent.champion_since) return '';
+  const remaining = Math.max(0, CHAMPION_TIMEOUT - (Date.now() / 1000 - agent.champion_since));
+  const color = remaining < 60 ? 'var(--red)' : 'var(--orange)';
+  const m = Math.floor(remaining / 60), s = Math.ceil(remaining % 60);
+  return `<span style="color:${color};font-size:0.68rem;font-family:'IBM Plex Mono',monospace">⏰${m}:${String(s).padStart(2,'0')}</span>`;
+}
+
 function buildAgentChip(agent, role) {
   const chip = document.createElement('div');
   chip.className = 'agent-chip' + (role ? ` ${role}` : '');
   chip.innerHTML = `
     <span class="chip-name">${agent.name}</span>
     <span class="chip-record">${agent.wins}W/${agent.losses}L</span>
+    ${reignTimer(agent)}
   `;
   return chip;
 }
@@ -415,6 +427,7 @@ function buildMatchCard(m, tierAgents) {
       ${ansIcon}
       <span class="chip-name">${agentData.name}</span>
       <span class="chip-record">${agentData.wins}W/${agentData.losses}L</span>
+      ${reignTimer(agentData)}
     </div>`;
   }
 
@@ -521,6 +534,8 @@ function renderEvent(ev) {
     div.className = 'event bracket_down';
   } else if (ev.type === 'champion_holds') {
     div.className = 'event champion_holds';
+  } else if (ev.type === 'champion_reset') {
+    div.className = 'event champion_reset';
   } else if (ev.type === 'round_end' || ev.type === 'new_round') {
     div.className = `event ${ev.type}`;
   } else if (ev.type === 'system' || ev.type === 'timeout' || ev.type === 'kick') {

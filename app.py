@@ -6,6 +6,7 @@ app = Flask(__name__)
 # ── Config ────────────────────────────────────────────────────────────────────
 ROUND_TIMEOUT     = 45   # seconds before auto-advancing
 KICK_AFTER_MISSED = 3    # kick after missing this many rounds
+CHAMPION_TIMEOUT  = 300  # seconds before Champion tier resets agent to Gold
 
 TIERS = ["Bronze", "Silver", "Gold", "Diamond", "Champion"]
 STARTING_TIER_IDX = 2    # everyone starts at Gold
@@ -137,6 +138,8 @@ def apply_bracket_moves(m):
         if idx < len(TIERS) - 1:
             new_tier = TIERS[idx + 1]
             agents[winner]["tier"] = new_tier
+            if new_tier == "Champion":
+                agents[winner]["champion_since"] = time.time()
             push_log("bracket_up", agent=winner, from_tier=TIERS[idx], to_tier=new_tier,
                      msg=f"{TIER_EMOJI[new_tier]} {winner} promoted to {new_tier}!")
         else:
@@ -148,6 +151,8 @@ def apply_bracket_moves(m):
         if idx > 0:
             new_tier = TIERS[idx - 1]
             agents[loser]["tier"] = new_tier
+            if TIERS[idx] == "Champion":
+                agents[loser]["champion_since"] = None
             push_log("bracket_down", agent=loser, from_tier=TIERS[idx], to_tier=new_tier,
                      msg=f"⬇️ {loser} dropped to {new_tier}")
         else:
@@ -244,6 +249,19 @@ def timeout_watcher():
     while True:
         time.sleep(5)
         with lock:
+            # Champion reign expiry
+            now = time.time()
+            for name, a in list(agents.items()):
+                if (a["status"] == "active" and a["tier"] == "Champion"
+                        and a.get("champion_since")
+                        and (now - a["champion_since"]) >= CHAMPION_TIMEOUT):
+                    a["tier"] = TIERS[STARTING_TIER_IDX]  # back to Gold
+                    a["wins"] = 0
+                    a["losses"] = 0
+                    a["champion_since"] = None
+                    push_log("champion_reset", agent=name,
+                             msg=f"⏰ {name}'s reign ended after {CHAMPION_TIMEOUT//60}m — reset to {TIERS[STARTING_TIER_IDX]}!")
+            # Round timeout
             if tournament["phase"] == "open":
                 elapsed = time.time() - tournament["started_at"]
                 if elapsed >= ROUND_TIMEOUT:
@@ -271,6 +289,7 @@ def join():
             agents[name] = {
                 "name": name, "tier": TIERS[STARTING_TIER_IDX],
                 "wins": 0, "losses": 0, "missed_rounds": 0, "status": "active",
+                "champion_since": None,
             }
             push_log("join", agent=name, tier=TIERS[STARTING_TIER_IDX],
                      msg=f"🤖 {name} joined at {TIERS[STARTING_TIER_IDX]} bracket")
