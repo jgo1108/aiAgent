@@ -134,6 +134,7 @@ def apply_bracket_moves(m):
     winner, loser = result.get("winner"), result.get("loser")
     if winner and winner in agents:
         agents[winner]["wins"] += 1
+        agents[winner]["consecutive_ties"] = 0
         idx = TIERS.index(agents[winner]["tier"])
         if idx < len(TIERS) - 1:
             new_tier = TIERS[idx + 1]
@@ -147,6 +148,7 @@ def apply_bracket_moves(m):
                      msg=f"👑 {winner} defends the Champion tier!")
     if loser and loser in agents:
         agents[loser]["losses"] += 1
+        agents[loser]["consecutive_ties"] = 0
         idx = TIERS.index(agents[loser]["tier"])
         if idx > 0:
             new_tier = TIERS[idx - 1]
@@ -158,6 +160,18 @@ def apply_bracket_moves(m):
         else:
             push_log("bracket_floor", agent=loser, tier="Bronze",
                      msg=f"🥉 {loser} stays at the Bronze floor")
+    # Tie handling — pity promotion after 3 consecutive ties at Bronze
+    if not winner and not loser:
+        for name in [m["agent1"], m["agent2"]]:
+            if name and name in agents:
+                a = agents[name]
+                if a["tier"] == "Bronze":
+                    a["consecutive_ties"] = a.get("consecutive_ties", 0) + 1
+                    if a["consecutive_ties"] >= 3:
+                        a["tier"] = TIERS[1]  # Silver
+                        a["consecutive_ties"] = 0
+                        push_log("pity_promotion", agent=name, from_tier="Bronze", to_tier="Silver",
+                                 msg=f"🤝 {name} pity-promoted to Silver after 3 consecutive ties!")
 
 def create_round_matches():
     global matches
@@ -289,7 +303,7 @@ def join():
             agents[name] = {
                 "name": name, "tier": TIERS[STARTING_TIER_IDX],
                 "wins": 0, "losses": 0, "missed_rounds": 0, "status": "active",
-                "champion_since": None,
+                "champion_since": None, "consecutive_ties": 0,
             }
             push_log("join", agent=name, tier=TIERS[STARTING_TIER_IDX],
                      msg=f"🤖 {name} joined at {TIERS[STARTING_TIER_IDX]} bracket")

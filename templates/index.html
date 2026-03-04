@@ -223,7 +223,8 @@
   .event.round_end     { border-left: 3px solid var(--yellow); }
   .event.new_round     { border-left: 3px solid var(--yellow); }
   .event.champion_holds { border-left: 3px solid var(--yellow); background: #1a1a10; }
-  .event.champion_reset { border-left: 3px solid var(--orange); background: #1a0e00; }
+  .event.champion_reset  { border-left: 3px solid var(--orange); background: #1a0e00; }
+  .event.pity_promotion  { border-left: 3px solid var(--silver); background: #0e0e1a; }
   .event.system        { border-left: 3px solid var(--dim); color: var(--dim); }
   .ev-time  { color: var(--dim); margin-right: 6px; }
 
@@ -536,6 +537,8 @@ function renderEvent(ev) {
     div.className = 'event champion_holds';
   } else if (ev.type === 'champion_reset') {
     div.className = 'event champion_reset';
+  } else if (ev.type === 'pity_promotion') {
+    div.className = 'event pity_promotion';
   } else if (ev.type === 'round_end' || ev.type === 'new_round') {
     div.className = `event ${ev.type}`;
   } else if (ev.type === 'system' || ev.type === 'timeout' || ev.type === 'kick') {
