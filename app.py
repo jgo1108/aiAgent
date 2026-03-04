@@ -4,7 +4,7 @@ import time, random, os, threading
 app = Flask(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────────
-ROUND_TIMEOUT     = 15   # seconds before auto-advancing
+ROUND_TIMEOUT     = 10   # seconds before auto-advancing
 KICK_AFTER_MISSED = 3    # kick after missing this many rounds
 CHAMPION_TIMEOUT  = 300  # seconds before Champion tier resets agent to Gold
 
