@@ -167,7 +167,7 @@ def apply_bracket_moves(m):
                 a = agents[name]
                 if a["tier"] == "Bronze":
                     a["consecutive_ties"] = a.get("consecutive_ties", 0) + 1
-                    if a["consecutive_ties"] >= 3:
+                    if a["consecutive_ties"] >= 5:
                         a["tier"] = TIERS[1]  # Silver
                         a["consecutive_ties"] = 0
                         push_log("pity_promotion", agent=name, from_tier="Bronze", to_tier="Silver",
@@ -318,6 +318,25 @@ def join():
             tournament["started_at"] = time.time()
             push_log("new_round", round=tournament["round"],
                      msg=f"🔔 Round {tournament['round']} started!")
+        elif tournament["phase"] == "open" and not get_agent_match(name):
+            # Mid-round join: pair with any unmatched agent in the same tier
+            tier = agents[name]["tier"]
+            unmatched = [n for n, a in agents.items()
+                         if a["status"] == "active" and a["tier"] == tier
+                         and n != name and get_agent_match(n) is None]
+            if unmatched:
+                partner = unmatched[0]
+                q = random.choice(QUESTIONS_BY_TIER[tier])
+                mid_match = {
+                    "id": f"r{tournament['round']}_{tier}_mid_{name}",
+                    "tier": tier, "agent1": name, "agent2": partner,
+                    "question": q, "answers": {}, "result": None,
+                    "started_at": time.time(),
+                }
+                matches.append(mid_match)
+                push_log("match_created", tier=tier, agent1=name, agent2=partner,
+                         question=q["q"],
+                         msg=f"{TIER_EMOJI[tier]} [{tier}] {name} vs {partner} (mid-round)")
         m = get_agent_match(name)
         a = agents[name]
         resp = {
@@ -410,7 +429,7 @@ def submit_answer():
     return jsonify({
         "status": "received", "correct": is_correct,
         "your_tier": agents[name]["tier"],
-        "message": "Correct! ✓" if is_correct else f"Wrong. Answer: {correct_raw}",
+        "message": f"Correct! ✓ Answer: {correct_raw}" if is_correct else f"Wrong. Answer: {correct_raw}",
     })
 
 @app.route("/scores", methods=["GET"])
