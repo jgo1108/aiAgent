@@ -136,8 +136,7 @@ def apply_bracket_moves(m):
         agents[winner]["wins"] += 1
         idx = TIERS.index(agents[winner]["tier"])
         if idx < len(TIERS) - 1:
-            new_idx = min(idx + 2, len(TIERS) - 1)
-            new_tier = TIERS[new_idx]
+            new_tier = TIERS[idx + 1]
             agents[winner]["tier"] = new_tier
             if new_tier == "Champion":
                 agents[winner]["champion_since"] = time.time()
